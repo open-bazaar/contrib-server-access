@@ -1,0 +1,17 @@
+{% extends "server/base.html" %}
+{# the login page fills the window, whatever frame it was asked for in #}
+{% block root %} data-top{% endblock %}
+{% block title %}{{ t.text("access.login.title") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('access.css') }}">{% endblock %}
+{% block body %}
+<div class="login">
+{% include "access/street.html" %}
+  <div class="panel">
+    <div class="brand">{% include "server/mark.svg" %}<span class="word">Bazaar</span></div>
+    <h2>{{ t.text("access.login.title") }}</h2>
+    <div class="sub">{{ t.text("access.login.welcome") }}</div>
+    {% include "access/login_form.html" %}
+  </div>
+{% include "access/street_phone.html" %}
+</div>
+{% endblock %}

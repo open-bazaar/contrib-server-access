@@ -1,0 +1,6 @@
+<form class="signin" hx-post="/login/" hx-target="this" hx-swap="outerHTML">
+  <div class="fld"><label for="name">{{ t.text("access.login.name") }}</label><input id="name" name="name" required autocomplete="username" spellcheck="false" autocapitalize="off"></div>
+  <div class="fld"><label for="password">{{ t.text("access.login.password") }}</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
+  {% if failed %}<p class="err" role="alert"><span class="i">{% include "access/triangle-alert.svg" %}</span>{{ t.text("access.login.failed") }}</p>{% endif %}
+  <button class="go" type="submit">{{ t.text("access.login.submit") }}</button>
+</form>
