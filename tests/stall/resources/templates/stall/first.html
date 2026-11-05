@@ -1,0 +1,10 @@
+{% extends "server/base.html" %}
+{% block title %}First stall{% endblock %}
+{% block body %}
+<section class="content">
+  <h2 id="language">{{ t.language }}</h2>
+  <a id="next" href="second">Second stall</a>
+  {# noon in UTC on 6 July 2026 #}
+  <time id="moment">{{ 1783339200000 | clock }}</time>
+</section>
+{% endblock %}
