@@ -1,0 +1,10 @@
+{% extends "server/base.html" %}
+{% block top %}{% endblock %}
+{% block body %}
+<p id="counted" data-topic="stall.count">waiting</p>
+<script>
+  document.getElementById("counted").addEventListener("bazaar:change", (event) => {
+    event.target.textContent = `counted ${event.detail.state.text}`;
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+/* The settings parts server-access brings: lists of rows, forms on cards, and
+   the login methods with each one's own settings page folded inside. */
+
+body { background: transparent; }
+.sheet { display: grid; gap: 12px; max-width: 900px; }
+.sheet > * { min-width: 0; }
+.sheet-hd { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 4px; }
+.sheet-hd h2 { margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 650; }
+.sheet-hd p { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; }
+.sheet-hd .btn { margin-left: auto; }
+.up { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; text-decoration: none; }
+.up .i svg { width: 14px; height: 14px; }
+
+.form { display: grid; gap: 18px; padding: 18px; }
+.form .input { width: 100%; font: inherit; }
+.form fieldset.field label.check { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-weight: 400; }
+.check input { margin: 3px 0 0; accent-color: var(--saffron); }
+.check b { display: block; font-size: 13.5px; font-weight: 600; }
+.check small { display: block; color: var(--muted); font-size: 12.5px; }
+.req { color: var(--crimson); margin-left: 3px; }
+.actions { display: flex; gap: 8px; }
+.outcome { margin: 0; font-size: 13px; }
+.outcome.changed { color: var(--jade); }
+.outcome.wrong, .outcome.short { color: var(--crimson); }
+.remove { display: grid; gap: 12px; justify-items: start; }
+.who { display: flex; align-items: center; gap: 12px; }
+.who b { display: block; font-size: 15px; }
+.who small { color: var(--muted); font-size: 12.5px; }
+
+.rows { padding: 4px 0; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: inherit; text-decoration: none; }
+.row + .row { border-top: 1px solid var(--line-soft); }
+.row .grow, .mrow .grow { flex: 1; min-width: 0; }
+.row b, .mrow b { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.row small, .mrow small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; }
+.row > .i { color: var(--faint); }
+.empty { margin: 0; padding: 16px; color: var(--muted); font-size: 13px; }
+
+.tag { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 5px; color: var(--muted); background: var(--sunken); border: 1px solid var(--line); }
+.tag.done { color: var(--jade); background: var(--jade-soft); border-color: transparent; }
+.tag.todo { color: var(--saffron); background: var(--saffron-soft); border-color: transparent; }
+
+/* the login methods: a tile, the name and what it is, folded open below */
+.mrow { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.mrow .lg { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; overflow: hidden; color: var(--text-2); background: var(--sunken); border: 1px solid var(--line); }
+.mrow .lg svg { width: 18px; height: 18px; }
+.method .mrow .lg { border: 0; background: none; }
+.method .mrow .lg svg { width: 40px; height: 40px; }
+.mrow .end { font-size: 12.5px; }
+.mrow .mono { font-family: var(--font-mono); font-size: 11.5px; }
+.method summary { list-style: none; cursor: pointer; }
+.method summary::-webkit-details-marker { display: none; }
+.method .chev { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; border: 1px solid var(--line); color: var(--muted); }
+.method .chev svg { width: 14px; height: 14px; transition: transform .15s; }
+.method[open] { border-color: var(--saffron-line); }
+.method[open] .chev svg { transform: rotate(180deg); }
+/* the method's own page, as tall as it is once it says so */
+.settings-of { display: block; width: 100%; border: 0; border-top: 1px solid var(--line-soft); background: var(--surface-2); }
+.note { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--r-md); border: 1px dashed var(--line-strong); color: var(--text-2); font-size: 13px; }
+.note > .i { color: var(--muted); }
+.note > .i svg { width: 16px; height: 16px; }
+.note b { color: var(--text); }
+.note .btn { margin-left: auto; }
+
+/* narrow screens: the shell's top bar already names the part */
+:root[data-layout="narrow"] .sheet-hd > div { display: none; }
+:root[data-layout="narrow"] .note { display: grid; grid-template-columns: auto 1fr; align-items: start; }
+:root[data-layout="narrow"] .note .btn { grid-column: 1 / -1; justify-self: end; }

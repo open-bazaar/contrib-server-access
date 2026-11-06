@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+lazy import asyncio
 lazy import re
 
 from playwright.async_api import Page, async_playwright, expect
@@ -14,7 +15,7 @@ async def signed_in(page: Page, served: Served) -> Page:
     await page.fill("#name", "admin")
     await page.fill("#password", served.password)
     await page.click("button[type=submit]")
-    await page.wait_for_url(re.compile(r"/overview$"))
+    await page.wait_for_url(re.compile(r"/stall$"))
     return page
 
 
@@ -38,7 +39,8 @@ async def test_a_module_page_wears_the_shell_theme_and_language_and_moves_its_ad
             await module.locator("#next").click()
             await page.wait_for_url(re.compile(r"/stall/second$"))
             await expect(page).to_have_title("Second stall")
-            await expect(page.locator("[data-title]")).to_have_text("Second stall")
+            # the page draws its own top bar
+            await expect(module.locator(".top h1")).to_have_text("Second stall")
             await page.go_back()
             await page.wait_for_url(re.compile(r"/stall$"))
             await expect(page).to_have_title("First stall")
@@ -60,25 +62,27 @@ async def test_a_module_page_wears_the_shell_theme_and_language_and_moves_its_ad
             await browser.close()
 
 
-async def test_overview_content_is_as_tall_as_its_page():
+async def test_a_framed_part_is_as_tall_as_its_page():
     async with serving() as served, async_playwright() as driver:
         browser = await driver.chromium.launch()
         try:
             context = await browser.new_context(color_scheme="light")
             page = await signed_in(await context.new_page(), served)
-            overview = page.frame(url=re.compile(r"/ui/overview/"))
-            assert overview is not None
-            tile = (
-                "document.querySelector('.tile iframe').getBoundingClientRect().height"
+            await page.goto(f"{served.url}/settings/stall")
+            await page.wait_for_url(re.compile(r"/settings/stall$"))
+            settings = page.frame(url=re.compile(r"/ui/settings/stall"))
+            assert settings is not None
+            pane = (
+                "document.querySelector('iframe.pane').getBoundingClientRect().height"
             )
-            await overview.wait_for_function(f"{tile} >= 240")
+            await settings.wait_for_function(f"{pane} >= 240")
             await (
                 page.frame_locator("iframe.frame")
-                .frame_locator(".tile iframe")
+                .frame_locator("iframe.pane")
                 .locator("#more")
                 .click()
             )
-            await overview.wait_for_function(f"{tile} >= 480")
+            await settings.wait_for_function(f"{pane} >= 480")
         finally:
             await browser.close()
 
@@ -103,9 +107,10 @@ async def test_logging_out_returns_to_the_login_page():
         try:
             context = await browser.new_context()
             page = await signed_in(await context.new_page(), served)
-            await page.click(".me .icon-btn")
+            await page.goto(f"{served.url}/settings")
+            await page.frame_locator("iframe.frame").locator(".leave").click()
             await page.wait_for_url(re.compile(r"/login/$"))
-            await page.goto(f"{served.url}/overview")
+            await page.goto(f"{served.url}/stall")
             await page.wait_for_url(re.compile(r"/login/$"))
         finally:
             await browser.close()
@@ -121,7 +126,7 @@ async def test_a_narrow_screen_gets_one_column_and_a_bar_along_the_bottom():
                 viewport={"width": 390, "height": 844},
             )
             page = await context.new_page()
-            await page.goto(f"{served.url}/overview")
+            await page.goto(f"{served.url}/stall")
             await page.wait_for_url(re.compile(r"/login/$"))
             # the form first, the street below it
             await expect(page.locator(".band")).to_be_visible()
@@ -133,7 +138,7 @@ async def test_a_narrow_screen_gets_one_column_and_a_bar_along_the_bottom():
             await page.fill("#name", "admin")
             await page.fill("#password", served.password)
             await page.click("button[type=submit]")
-            await page.wait_for_url(re.compile(r"/overview$"))
+            await page.wait_for_url(re.compile(r"/stall$"))
 
             bar = page.locator(".side")
             box = await bar.bounding_box()
@@ -158,10 +163,10 @@ async def test_a_narrow_screen_gets_one_column_and_a_bar_along_the_bottom():
             await expect(frame.locator(".settings")).to_have_attribute(
                 "data-view", "directory"
             )
-            await expect(frame.locator(".snav .gp")).to_have_text("个人")
+            await expect(frame.locator(".snav .gp").first).to_have_text("个人")
             await expect(frame.locator(".leave")).to_be_visible()
-            back = page.locator("[data-back-link]")
-            await expect(back).to_be_hidden()
+            back = frame.locator(".top .back")
+            await expect(back).to_have_count(0)
             await frame.locator('.snav a[href="/ui/settings/stall"]').click()
             await page.wait_for_url(re.compile(r"/settings/stall$"))
             await expect(back).to_be_visible()
@@ -188,6 +193,171 @@ async def test_a_framed_page_lays_out_as_the_shell_around_it_does():
                 "data-layout", "narrow"
             )
             await expect(frame.locator(".snav")).to_be_hidden()
-            await expect(page.locator("[data-back-link]")).to_be_visible()
+            await expect(frame.locator(".top .back")).to_be_visible()
+        finally:
+            await browser.close()
+
+
+async def test_with_a_login_method_the_card_turns_between_it_and_the_password():
+    async with serving(door=True) as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            page = await (await browser.new_context(locale="zh-CN")).new_page()
+            await page.goto(f"{served.url}/login/")
+            card = page.locator(".method")
+            await expect(card.locator(".logo.big")).to_be_visible()
+            await expect(card.locator("#password")).to_be_hidden()
+            await card.locator(".corner").click()
+            await expect(card.locator("#password")).to_be_visible()
+            await expect(card.locator(".logo.big")).to_be_hidden()
+            await card.locator(".corner").click()
+            await expect(card.locator(".logo.big")).to_be_visible()
+            await card.locator(".corner").click()
+            await page.fill("#name", "admin")
+            await page.fill("#password", served.password)
+            await page.click("button[type=submit]")
+            await page.wait_for_url(re.compile(r"/stall$"))
+        finally:
+            await browser.close()
+
+
+async def test_the_appearance_part_dresses_the_whole_window():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(locale="zh-CN", color_scheme="dark")
+            page = await signed_in(await context.new_page(), served)
+            await expect(page.locator("html")).to_have_attribute("data-theme", "night")
+            await page.goto(f"{served.url}/settings/appearance")
+            part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
+            await part.locator("label:has(input[name=theme][value=light])").click()
+            await expect(page.locator("html")).to_have_attribute("data-theme", "day")
+            part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
+            await part.locator("label:has(input[name=day_theme][value=night])").click()
+            await expect(page.locator("html")).to_have_attribute("data-theme", "night")
+            part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
+            await part.locator("#language").select_option("en")
+            await expect(page.locator("html")).to_have_attribute("lang", "en")
+            await expect(page.locator(".side .nav-group").first).to_have_text(
+                "Workbench"
+            )
+            # the card beside the account turns to the night at a click
+            await page.locator(".me .theme button[value=dark]").click()
+            await expect(page.locator("html")).to_have_attribute("data-theme", "night")
+            # kept for the account, not the window
+            other = await (
+                await browser.new_context(
+                    storage_state=await context.storage_state(), color_scheme="dark"
+                )
+            ).new_page()
+            await other.goto(f"{served.url}/stall")
+            await expect(other.locator("html")).to_have_attribute("lang", "en")
+            await expect(other.locator("html")).to_have_attribute("data-theme", "night")
+        finally:
+            await browser.close()
+
+
+async def test_the_window_follows_its_topics_in_one_request_a_round():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context()
+            page = await signed_in(await context.new_page(), served)
+            asked: list[object] = []
+            page.on(
+                "request",
+                lambda request: (
+                    asked.append(request.post_data_json)
+                    if request.url.endswith("/api/server/poll")
+                    else None
+                ),
+            )
+            badge = page.locator('.side .nav[href="/stall"] .tally')
+            await expect(badge).to_have_text("1")
+            panel = page.frame_locator(".side iframe.panel")
+            await expect(panel.locator("#counted")).to_have_text("counted 1")
+            await page.request.post(f"{served.url}/ui/stall/bump")
+            await expect(badge).to_have_text("2")
+            await expect(panel.locator("#counted")).to_have_text("counted 2")
+            # the sidebar's badge and the panel inside its frame went in the same requests
+            assert any(
+                isinstance(body, dict) and len(body["subscriptions"]) >= 2
+                for body in asked
+            )
+        finally:
+            await browser.close()
+
+
+async def test_a_page_on_its_own_follows_its_topics():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context()
+            page = await signed_in(await context.new_page(), served)
+            await page.goto(f"{served.url}/ui/stall/panel")
+            counted = page.locator("#counted")
+            await expect(counted).to_have_text(re.compile(r"^counted \d+$"))
+            before = int((await counted.text_content() or "").split()[-1])
+            await page.request.post(f"{served.url}/ui/stall/bump")
+            await expect(counted).to_have_text(f"counted {before + 1}")
+        finally:
+            await browser.close()
+
+
+async def test_a_piece_htmx_swaps_in_follows_its_topic():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context()
+            page = await signed_in(await context.new_page(), served)
+            frame = page.frame_locator("iframe.frame")
+            await frame.locator("#more").click()
+            piece = frame.locator("#piece")
+            await expect(piece).to_have_text(re.compile(r"^\d+$"))
+            before = int(await piece.text_content() or "")
+            await page.request.post(f"{served.url}/ui/stall/bump")
+            await expect(piece).to_have_text(str(before + 1))
+        finally:
+            await browser.close()
+
+
+async def test_an_element_that_left_its_page_is_no_longer_followed():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context()
+            page = await signed_in(await context.new_page(), served)
+            shelf = page.frame_locator("iframe.frame").locator("#shelf")
+            await expect(shelf).to_have_text("a")
+            await shelf.evaluate("element => element.remove()")
+            asked: list[str] = []
+            page.on(
+                "request",
+                lambda request: (
+                    asked.append(request.post_data or "")
+                    if request.url.endswith("/api/server/poll")
+                    else None
+                ),
+            )
+            # the sidebar's badge goes on asking, round after round
+            for _ in range(100):
+                if len(asked) >= 3:
+                    break
+                await asyncio.sleep(0.1)
+            assert "stall.shelf" not in asked[-1]
+        finally:
+            await browser.close()
+
+
+async def test_a_panel_sits_above_the_bottom_bar_on_a_phone():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(viewport={"width": 390, "height": 844})
+            page = await signed_in(await context.new_page(), served)
+            await expect(page.locator(".strip iframe.panel")).to_be_visible()
+            await expect(page.locator(".side iframe.panel")).to_be_hidden()
+            strip = page.frame_locator(".strip iframe.panel")
+            await expect(strip.locator("#counted")).to_have_text("counted 1")
         finally:
             await browser.close()

@@ -6,5 +6,7 @@
   <a id="next" href="second">Second stall</a>
   {# noon in UTC on 6 July 2026 #}
   <time id="moment">{{ 1783339200000 | clock }}</time>
+  <button id="more" type="button" hx-get="/ui/stall/piece" hx-swap="outerHTML">More</button>
+  <span id="shelf" data-topic="stall.shelf" data-scope='{"shelf": "a"}' data-tally hidden></span>
 </section>
 {% endblock %}

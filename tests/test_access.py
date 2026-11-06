@@ -35,22 +35,31 @@ async def test_the_admin_made_at_first_start_logs_in_and_out():
         )
         assert login.status_code == 204
         assert login.headers["hx-redirect"] == "/"
-        overview = await session.get(f"{served.url}/overview")
-        assert overview.status_code == 200
-        assert "no-store" in overview.headers["cache-control"]
-        assert "frame-ancestors 'self'" in overview.headers["content-security-policy"]
+        shell = await session.get(f"{served.url}/stall")
+        assert shell.status_code == 200
+        assert "no-store" in shell.headers["cache-control"]
+        assert "frame-ancestors 'self'" in shell.headers["content-security-policy"]
         assert (await session.get(f"{served.url}/api/stall/me")).json() == {
             "name": "admin"
         }
-        logout = await session.post(f"{served.url}/login/logout")
+        logout = await session.post(
+            f"{served.url}/login/logout", headers={"HX-Request": "true"}
+        )
         assert logout.status_code == 204
         assert logout.headers["hx-redirect"] == "/login/"
-        assert (await session.get(f"{served.url}/overview")).status_code == 303
+        # a plain form is sent to the login page
+        await session.post(
+            f"{served.url}/login/", data={"name": "admin", "password": served.password}
+        )
+        left = await session.post(f"{served.url}/login/logout")
+        assert left.status_code == 303
+        assert left.headers["location"] == "/login/"
+        assert (await session.get(f"{served.url}/stall")).status_code == 303
 
 
 async def test_requests_without_a_session_go_to_the_login_page():
     async with serving() as served, client() as session:
-        for path in ("/overview", "/stall/second", "/ui/stall/", "/api/stall/me"):
+        for path in ("/stall", "/stall/second", "/ui/stall/", "/api/stall/me"):
             sent = await session.get(f"{served.url}{path}")
             assert sent.status_code == 303, path
             assert sent.headers["location"] == "/login/"
@@ -64,7 +73,7 @@ async def test_requests_without_a_session_go_to_the_login_page():
             "bcs_session=admin:0:0:0:é".encode("latin-1"),
         ):
             forged = await session.get(
-                f"{served.url}/overview", headers={b"Cookie": cookie}
+                f"{served.url}/stall", headers={b"Cookie": cookie}
             )
             assert forged.status_code == 303, cookie
 

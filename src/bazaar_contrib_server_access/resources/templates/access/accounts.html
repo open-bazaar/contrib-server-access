@@ -1,0 +1,17 @@
+{% extends "server/base.html" %}
+{% import "server/icons.html" as icons %}
+{% import "server/avatar.html" as people %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ t.text("access.accounts") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <header class="sheet-hd"><div><h2>{{ t.text("access.accounts") }}</h2><p>{{ t.text("access.accounts.hint") }}</p></div></header>
+  <div class="card rows">
+    {% for shown in accounts %}
+    <a class="row" href="/ui/access/accounts/{{ ref(shown.id) }}">{{ people.avatar({"name": shown.shown, "avatar": shown.avatar_url}, "sm") }}<span class="grow"><b>{{ shown.shown }}</b><small>{% include "access/source.html" %}</small></span>{{ icons.icon("chevron-right") }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
