@@ -54,23 +54,21 @@ class Settings:
         self._login = login
         self._accounts = accounts
         self._roles = roles
-        self.app = pages.application(
-            [
-                Route("/security", self._security),
-                Route("/security", self._password, methods=["POST"]),
-                Route("/roles/", self._role_list),
-                Route("/roles/", self._role_save, methods=["POST"]),
-                Route("/roles/new", self._role_page),
-                Route("/roles/{ref}", self._role_page),
-                Route("/roles/{ref}", self._role_save, methods=["POST"]),
-                Route("/roles/{ref}/default", self._role_default, methods=["POST"]),
-                Route("/roles/{ref}/remove", self._role_remove, methods=["POST"]),
-                Route("/accounts/", self._account_list),
-                Route("/accounts/{ref}", self._account_page),
-                Route("/accounts/{ref}", self._account_save, methods=["POST"]),
-                Route("/methods/", self._methods),
-            ]
-        )
+        self.routes = [
+            Route("/security", self._security),
+            Route("/security", self._password, methods=["POST"]),
+            Route("/roles/", self._role_list),
+            Route("/roles/", self._role_save, methods=["POST"]),
+            Route("/roles/new", self._role_page),
+            Route("/roles/{ref}", self._role_page),
+            Route("/roles/{ref}", self._role_save, methods=["POST"]),
+            Route("/roles/{ref}/default", self._role_default, methods=["POST"]),
+            Route("/roles/{ref}/remove", self._role_remove, methods=["POST"]),
+            Route("/accounts/", self._account_list),
+            Route("/accounts/{ref}", self._account_page),
+            Route("/accounts/{ref}", self._account_save, methods=["POST"]),
+            Route("/methods/", self._methods),
+        ]
 
     async def _security(self, request: Request) -> Response:
         if not request.state.account.admin:
