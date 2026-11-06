@@ -9,9 +9,11 @@ body { background: var(--bg); }
 .art { position: relative; overflow: hidden; background: var(--scene-sky); }
 .art svg.street-art { position: absolute; inset: 0; width: 100%; height: 100%; }
 .copy { position: absolute; z-index: 1; }
-.art .copy { left: 72px; top: 300px; right: 72px; }
+/* the copy keeps clear of the street: lower windows raise it, narrower columns set the slogan smaller, still on its two lines */
+.art .copy { left: 72px; top: clamp(120px, 33vh, 300px); right: 72px; }
 .copy .eyebrow { font: 700 12px var(--font-ui); letter-spacing: .32em; color: var(--saffron); }
 .copy h1, .copy h2 { margin: 18px 0 0; font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 1.22; color: var(--text); letter-spacing: .02em; }
+.art .copy h1 { font-size: clamp(34px, calc((100vw - 600px) * .062), 52px); }
 .copy h1 span, .copy h2 span { color: var(--saffron); }
 .copy p { margin: 20px 0 0; font: italic 400 19px/1.5 var(--font-display); color: var(--text-2); font-variation-settings: "opsz" 24, "SOFT" 80; max-width: 520px; }
 
@@ -66,6 +68,9 @@ body { background: var(--bg); }
 .or { align-self: stretch; display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: var(--faint); font-size: 12px; }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .logos { display: flex; justify-content: center; gap: 22px; }
+/* one way in: the card as tall as what it shows, the line closing it */
+.method.single:not(.password) { min-height: 0; }
+.method.single .or { margin-bottom: 0; }
 
 /* narrow screens: the form first, the street under a downward arc */
 @media (max-width: 959px) {
