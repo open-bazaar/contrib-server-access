@@ -1,0 +1,16 @@
+{% extends "server/base.html" %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ t.text("access.security") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <header class="sheet-hd"><div><h2>{{ t.text("access.security") }}</h2><p>{{ t.text("access.security.hint") }}</p></div></header>
+  <form class="card form" method="post" action="/ui/access/security">
+    <div class="field"><label for="current">{{ t.text("access.security.current") }}<span class="req">*</span></label><input class="input" id="current" name="current" type="password" autocomplete="current-password" required></div>
+    <div class="field"><label for="new">{{ t.text("access.security.new") }}<span class="req">*</span></label><input class="input" id="new" name="new" type="password" autocomplete="new-password" minlength="8" required><span class="hint">{{ t.text("access.security.length") }}</span></div>
+    {% if outcome %}<p class="outcome {{ outcome }}" role="status">{{ t.text("access.security." ~ outcome) }}</p>{% endif %}
+    <div class="actions"><button class="btn primary" type="submit">{{ t.text("access.save") }}</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,5 +1,7 @@
 """Who is logged in: a signed cookie that names the account, when it was
-issued, the account's session version it was issued under, and when it ends."""
+issued, the account's session version it was issued under, and when it ends;
+and, after a login through another site, a longer one that lets the session
+be renewed while that site still vouches for the account."""
 
 from __future__ import annotations
 
@@ -12,6 +14,8 @@ lazy from tempfile import NamedTemporaryFile
 lazy from time import time_ns
 
 COOKIE = "bcs_session"
+RENEWAL = "bcs_reauth"
+RENEWAL_DAYS = 30
 _KEY_BYTES = 32
 
 
@@ -21,6 +25,16 @@ class Claim:
 
     account_id: str
     session_version: int
+
+
+@dataclass(frozen=True, slots=True)
+class Renewal:
+    """What a renewal cookie says: whose session, under which version, and
+    the login method that vouches for it."""
+
+    account_id: str
+    session_version: int
+    method: str
 
 
 class Sessions:
@@ -56,6 +70,33 @@ class Sessions:
         ):
             return None
         return Claim(account_id=account_id, session_version=int(mark))
+
+    def renewal(self, account_id: str, session_version: int, method: str) -> str:
+        ends = time_ns() // 1_000_000 + RENEWAL_DAYS * 86_400_000
+        body = f"{account_id}:{session_version}:{method}:{ends}"
+        return f"{body}:{self._sign('renewal:' + body)}"
+
+    def renewing(self, cookie: str | None) -> Renewal | None:
+        """The renewal a cookie asks for, or nothing when it is forged or
+        expired."""
+        if not cookie:
+            return None
+        body, _, signature = cookie.rpartition(":")
+        if not body or not hmac.compare_digest(
+            self._sign("renewal:" + body).encode(), signature.encode()
+        ):
+            return None
+        parts = body.split(":")
+        if len(parts) != 4:
+            return None
+        account_id, mark, method, ends = parts
+        if (
+            not mark.isdigit()
+            or not ends.isdigit()
+            or time_ns() // 1_000_000 >= int(ends)
+        ):
+            return None
+        return Renewal(account_id, int(mark), method)
 
     def _sign(self, body: str) -> str:
         return hmac.new(self._key, body.encode("utf-8"), sha256).hexdigest()

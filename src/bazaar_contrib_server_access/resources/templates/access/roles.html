@@ -1,0 +1,18 @@
+{% extends "server/base.html" %}
+{% import "server/icons.html" as icons %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ t.text("access.roles") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <header class="sheet-hd"><div><h2>{{ t.text("access.roles") }}</h2><p>{{ t.text("access.roles.hint") }}</p></div><a class="btn primary sm" href="/ui/access/roles/new">{{ t.text("access.roles.new") }}</a></header>
+  <div class="card rows">
+    {% for role in roles %}
+    <a class="row" href="/ui/access/roles/{{ ref(role.id) }}"><span class="grow"><b>{{ role.name }}{% if default and default.id == role.id %} <span class="tag">{{ t.text("access.roles.default") }}</span>{% endif %}</b><small>{{ t.text("access.roles.count", {"n": role.permissions | length}) }}</small></span>{{ icons.icon("chevron-right") }}</a>
+    {% else %}
+    <p class="empty">{{ t.text("access.roles.none") }}</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

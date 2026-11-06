@@ -1,0 +1,25 @@
+{% extends "server/base.html" %}
+{% import "server/icons.html" as icons %}
+{% import "server/avatar.html" as people %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ shown.shown }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <a class="up" href="/ui/access/accounts/">{{ icons.icon("chevron-left") }}{{ t.text("access.accounts") }}</a>
+  <form class="card form" method="post" action="/ui/access/accounts/{{ ref(shown.id) }}">
+    <div class="who">{{ people.avatar({"name": shown.shown, "avatar": shown.avatar_url}) }}<div><b>{{ shown.shown }}</b><small>{% include "access/source.html" %}</small></div></div>
+    {% if shown.admin %}<p class="muted">{{ t.text("access.accounts.admin") }}</p>{% endif %}
+    <fieldset class="field">
+      <legend>{{ t.text("access.roles") }}</legend>
+      {% for role in roles %}
+      <label class="check"><input type="checkbox" name="roles" value="{{ role.id }}"{% if role.id in held %} checked{% endif %}><span><b>{{ role.name }}</b></span></label>
+      {% else %}
+      <p class="muted">{{ t.text("access.roles.none") }}</p>
+      {% endfor %}
+    </fieldset>
+    <div class="actions"><button class="btn primary" type="submit">{{ t.text("access.save") }}</button></div>
+  </form>
+</section>
+{% endblock %}

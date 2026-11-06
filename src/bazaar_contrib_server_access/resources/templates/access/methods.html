@@ -1,0 +1,30 @@
+{% extends "server/base.html" %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ t.text("access.methods") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <header class="sheet-hd"><div><h2>{{ t.text("access.methods") }}</h2><p>{{ t.text("access.methods.hint") }}</p></div></header>
+  <div class="card mrow">
+    <span class="lg">{% include "access/icons/lock.svg" %}</span>
+    <span class="grow"><b>{{ t.text("access.methods.password") }} <span class="tag core">{{ t.text("access.methods.builtin") }}</span></b><small>{{ t.text("access.methods.password_hint") }}</small></span>
+    <span class="muted end">{{ t.text("access.methods.always") }}</span>
+  </div>
+  {% for method, ready in methods %}
+  <details class="card method"{% if not ready %} open{% endif %}>
+    <summary class="mrow">
+      <span class="lg">{{ method.icon | safe }}</span>
+      <span class="grow"><b>{{ t.text(method.name) }} <span class="tag {{ 'done' if ready else 'todo' }}">{{ t.text("access.methods.ready" if ready else "access.methods.unready") }}</span></b><small>{{ t.text(method.description) }}{% if packages[method.key] %}<span class="mono"> · {{ packages[method.key] }}</span>{% endif %}</small></span>
+      <span class="chev">{% include "access/icons/chevron-down.svg" %}</span>
+    </summary>
+    <iframe class="settings-of" src="{{ method.settings }}" data-fit title="{{ t.text(method.name) }}"></iframe>
+  </details>
+  {% endfor %}
+  <div class="note">
+    <span class="i">{% include "access/icons/users.svg" %}</span>
+    <span>{% if default %}{{ t.text("access.methods.default") }} <b>{{ default.name }}</b>{% else %}{{ t.text("access.methods.no_default") }}{% endif %}</span>
+    <a class="btn sm" href="/settings/roles" target="_top">{{ t.text("access.methods.change_default") }}</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,4 +1,6 @@
 {% extends "server/base.html" %}
+{# the login page fills the window without a top bar #}
+{% block top %}{% endblock %}
 {# the login page fills the window, whatever frame it was asked for in #}
 {% block root %} data-top{% endblock %}
 {% block title %}{{ t.text("access.login.title") }}{% endblock %}
@@ -10,7 +12,38 @@
     <div class="brand">{% include "server/mark.svg" %}<span class="word">Bazaar</span></div>
     <h2>{{ t.text("access.login.title") }}</h2>
     <div class="sub">{{ t.text("access.login.welcome") }}</div>
+    {% if methods %}
+    {# two faces of one card, each turning to the other from its top-right corner #}
+    <div class="method" x-data="{ password: false, chosen: '{{ methods[0].key }}' }" :class="{ password }">
+      <div class="tip"><span class="for-third">{{ t.text("access.login.by_password") }}</span><span class="for-password">{{ t.text("access.login.by_others") }}</span></div>
+      <button class="corner" type="button" @click="password = !password" aria-label="{{ t.text('access.login.turn') }}">
+        <svg class="under" viewBox="0 0 62 62" aria-hidden="true"><polygon points="0,0 62,0 62,62" class="layer"/><polygon points="0,0 4.5,0 62,57.5 62,62" class="shade"/></svg>
+        <span class="for-third">{% include "access/icons/monitor.svg" %}</span><span class="for-password">{% include "access/icons/blocks.svg" %}</span>
+      </button>
+      <div class="third for-third">
+        {% for method in methods %}
+        <div class="face" x-show="chosen === '{{ method.key }}'"{% if not loop.first %} x-cloak{% endif %}>
+          <a class="logo big" href="/login/{{ method.key }}/" aria-label="{{ t.text(method.description) }}"><span class="tile">{{ method.icon | safe }}</span></a>
+          <b>{{ t.text(method.name) }}</b>
+          <p>{{ t.text(method.description) }}</p>
+        </div>
+        {% endfor %}
+        {% if methods | length > 1 %}
+        <div class="or">{{ t.text("access.login.others") }}</div>
+        <div class="logos">
+          {% for method in methods %}
+          <button class="logo" type="button" x-show="chosen !== '{{ method.key }}'"{% if loop.first %} x-cloak{% endif %} @click="chosen = '{{ method.key }}'" title="{{ t.text(method.name) }}" aria-label="{{ t.text(method.name) }}"><span class="tile sm">{{ method.icon | safe }}</span></button>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if failure %}<p class="err" role="alert"><span class="i">{% include "access/triangle-alert.svg" %}</span>{{ t.text(failure) }}</p>{% endif %}
+      </div>
+      <div class="for-password">{% include "access/login_form.html" %}</div>
+    </div>
+    {% else %}
+    {% if failure %}<p class="err lone" role="alert"><span class="i">{% include "access/triangle-alert.svg" %}</span>{{ t.text(failure) }}</p>{% endif %}
     {% include "access/login_form.html" %}
+    {% endif %}
   </div>
 {% include "access/street_phone.html" %}
 </div>

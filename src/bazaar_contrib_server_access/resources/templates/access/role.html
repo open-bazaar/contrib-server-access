@@ -1,0 +1,41 @@
+{% extends "server/base.html" %}
+{% import "server/icons.html" as icons %}
+{# a part of the settings page, under its top bar #}
+{% block top %}{% endblock %}
+{% block title %}{{ role.name if role else t.text("access.roles.new") }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('manage.css') }}">{% endblock %}
+{% block body %}
+<section class="sheet">
+  <a class="up" href="/ui/access/roles/">{{ icons.icon("chevron-left") }}{{ t.text("access.roles") }}</a>
+  <form class="card form" method="post" action="/ui/access/roles/{{ ref(role.id) if role else '' }}">
+    <div class="field"><label for="name">{{ t.text("access.roles.name") }}<span class="req">*</span></label><input class="input" id="name" name="name" value="{{ role.name if role else '' }}" maxlength="80" required></div>
+    {% for module, points in groups.items() %}
+    <fieldset class="field">
+      <legend>{{ t.text(module) }}</legend>
+      {% for point in points %}
+      <label class="check"><input type="checkbox" name="permissions" value="{{ point }}"{% if role and point in role.permissions %} checked{% endif %}><span><b>{{ t.text(point) }}</b><small>{{ t.text(descriptions[point]) }}</small></span></label>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+    {% if error %}<p class="outcome wrong" role="alert">{{ t.text("access.roles." ~ error) }}</p>{% endif %}
+    <div class="actions"><button class="btn primary" type="submit">{{ t.text("access.save") }}</button></div>
+  </form>
+  {% if role %}
+  <div class="card form">
+    {% if default and default.id == role.id %}
+    <p class="muted">{{ t.text("access.roles.is_default") }}</p>
+    {% else %}
+    <form method="post" action="/ui/access/roles/{{ ref(role.id) }}/default"><button class="btn" type="submit">{{ t.text("access.roles.make_default") }}</button></form>
+    {% endif %}
+    <form class="remove" method="post" action="/ui/access/roles/{{ ref(role.id) }}/remove">
+      {% if default and default.id == role.id %}
+      <div class="field"><label for="replacement">{{ t.text("access.roles.replacement") }}</label>
+        <div class="input select"><select id="replacement" name="replacement" required><option value=""></option>{% for other in roles if other.id != role.id %}<option value="{{ other.id }}">{{ other.name }}</option>{% endfor %}</select>{{ icons.icon("chevron-down") }}</div>
+      </div>
+      {% endif %}
+      <button class="btn danger" type="submit">{{ t.text("access.roles.remove") }}</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
