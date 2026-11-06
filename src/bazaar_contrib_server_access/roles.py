@@ -9,14 +9,12 @@ lazy from collections.abc import Sequence
 lazy from typing import cast
 
 lazy from bazaar_contrib_storage import (
-    All,
     Column,
     Compare,
     Conflict,
     Database,
     Delete,
     Expression,
-    In,
     Insert,
     Join,
     Record,
@@ -26,8 +24,6 @@ lazy from bazaar_contrib_storage import (
     Value,
 )
 
-# what a role is shared through; a role going takes its shares along
-_SHARES = ("computer_share_role", "agent_share_role")
 # a role's columns, read through a join
 _COLUMNS: dict[str, Expression] = {
     name: Column(name=name, table="roles")
@@ -54,7 +50,7 @@ def _role(row: Record) -> StoredRole:
     )
 
 
-def _equals(column: str, value: str, table: str | None = None) -> Compare:
+def equals(column: str, value: str, table: str | None = None) -> Compare:
     return Compare(
         left=Column(name=column, table=table), operator="=", right=Value(value=value)
     )
@@ -95,7 +91,7 @@ class Roles:
                             ),
                         ),
                     ),
-                    where=_equals("account_id", account_id, "account_roles"),
+                    where=equals("account_id", account_id, "account_roles"),
                     order_by=(Sort(expression=Column(name="name", table="roles")),),
                 )
             )
@@ -129,7 +125,7 @@ class Roles:
 
         async def replace(session: Session) -> None:
             await session.delete(
-                Delete(table="account_roles", where=_equals("account_id", account_id))
+                Delete(table="account_roles", where=equals("account_id", account_id))
             )
             if role_ids:
                 await session.insert(
@@ -193,19 +189,12 @@ class Roles:
                     )
                 )
             await session.delete(
-                Delete(table="account_roles", where=_equals("role_id", role_id))
+                Delete(table="account_roles", where=equals("role_id", role_id))
             )
+            # a role stands only in the shares made with it, whatever their kind
             await session.delete(
-                Delete(
-                    table="relations",
-                    where=All(
-                        conditions=(
-                            _equals("subject_id", role_id),
-                            In(expression=Column(name="kind"), values=_SHARES),
-                        )
-                    ),
-                )
+                Delete(table="relations", where=equals("subject_id", role_id))
             )
-            await session.delete(Delete(table="roles", where=_equals("id", role_id)))
+            await session.delete(Delete(table="roles", where=equals("id", role_id)))
 
         await self._database.transaction(remove)

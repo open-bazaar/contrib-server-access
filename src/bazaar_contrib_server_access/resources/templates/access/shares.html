@@ -1,0 +1,36 @@
+{% extends "server/base.html" %}
+{# a target's sharing, inside the drawer or the sheet of the page the target belongs to #}
+{% block top %}{% endblock %}
+{% block title %}{{ t.text("access.shares.title", {"name": name}) }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('shares.css') }}">{% endblock %}
+{% block body %}
+{# saving or giving up tells the frame the page sits in that it is done #}
+<form class="shares" method="post" x-data="{ query: '', dirty: false, done() { window.frameElement?.dispatchEvent(new CustomEvent('bazaar:done', { bubbles: true })) } }" @change="dirty = true"{% if saved %} x-init="done()"{% endif %}>
+  <div class="part">
+  <p class="hint">{{ t.text("access.shares.hint") }}</p>
+  {% if roles %}
+  <label class="input search">{% include "access/icons/search.svg" %}<input type="search" x-model="query" placeholder="{{ t.text('access.shares.search') }}" aria-label="{{ t.text('access.shares.search') }}"></label>
+  <div class="grants" style="--points: {{ points | length }}">
+    <div class="gr h"><span>{{ t.text("access.shares.role") }}</span>{% for point in points %}<span>{{ t.text(point) }}</span>{% endfor %}</div>
+    {% for role in roles %}
+    <div class="gr" data-name="{{ role.name | lower }}" x-data="{ changed: false }" @change="changed = true" :class="{ changed }" x-show="!query || $el.dataset.name.includes(query.toLowerCase())">
+      <input type="hidden" name="roles" value="{{ ref(role.id) }}">
+      <div class="rn"><b>{{ role.name }}</b>{% if default and default.id == role.id %}<small>{{ t.text("access.shares.default") }}</small>{% endif %}</div>
+      {% for point in points %}
+      <label class="ck"><input type="checkbox" name="grant" value="{{ ref(role.id) }} {{ point }}"{% if point in grants.get(role.id, ()) %} checked{% endif %}><span>{{ t.text(point) }}</span></label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">{{ t.text("access.shares.none") }}</p>
+  {% endif %}
+  </div>
+  <footer>
+    {% if invalid %}<span class="outcome" role="alert">{{ t.text("access.shares.invalid") }}</span>{% endif %}
+    <span class="dirty" x-show="dirty" x-cloak>{{ t.text("access.shares.unsaved") }}</span>
+    <button class="btn" type="button" @click="done()">{{ t.text("access.cancel") }}</button>
+    {% if roles %}<button class="btn primary" type="submit">{{ t.text("access.save") }}</button>{% endif %}
+  </footer>
+</form>
+{% endblock %}

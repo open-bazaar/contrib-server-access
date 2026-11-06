@@ -361,3 +361,37 @@ async def test_a_panel_sits_above_the_bottom_bar_on_a_phone():
             await expect(strip.locator("#counted")).to_have_text("counted 1")
         finally:
             await browser.close()
+
+
+async def test_a_share_page_in_a_frame_says_when_it_is_done():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(locale="en-US")
+            page = await signed_in(await context.new_page(), served)
+            await page.request.post(
+                f"{served.url}/ui/access/roles/",
+                form={"name": "ops", "permissions": "stands.view"},
+            )
+            made = await page.request.post(
+                f"{served.url}/ui/stand/", form={"name": "north"}
+            )
+            await page.goto(
+                f"{served.url}/ui/stand/{(await made.json())['ref']}/sharing"
+            )
+            share = page.frame_locator("#share")
+            await share.locator("input[name=grant]").first.check()
+            await expect(share.locator(".dirty")).to_be_visible()
+            await share.locator("footer button[type=submit]").click()
+            await expect(page.locator("body")).to_have_attribute("data-done", "yes")
+            # what was saved is there when the page opens again, and giving up
+            # is done as well
+            await page.reload()
+            await expect(share.locator("input[name=grant]").first).to_be_checked()
+            await share.locator("footer button[type=button]").click()
+            await expect(page.locator("body")).to_have_attribute("data-done", "yes")
+            # on a phone, each point is a toggle carrying its name
+            await page.set_viewport_size({"width": 390, "height": 844})
+            await expect(share.locator(".ck span").first).to_be_visible()
+        finally:
+            await browser.close()

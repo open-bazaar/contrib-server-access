@@ -1,4 +1,5 @@
-"""Password hashing: scrypt, a few derivations at a time."""
+"""Password and secret hashing: scrypt, a few derivations at a time across
+the server, for the modules keeping secrets of their own as well."""
 
 from __future__ import annotations
 

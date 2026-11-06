@@ -12,6 +12,7 @@ lazy from collections.abc import AsyncIterator, Mapping
 lazy from importlib.resources import files
 lazy from pathlib import Path
 lazy from typing import Annotated, Any
+lazy from uuid import uuid7
 
 import httpx
 from bazaar_contrib_http import HTTP
@@ -30,12 +31,13 @@ from bazaar_contrib_server_database import SERVER_DB
 from bazaar_core import Context, Contrib, ContribEntry, ContribHub, ContribSpec, load
 from door import Door
 from fastapi import Depends, FastAPI
+from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
 
-from bazaar_contrib_server_access import ACCESS
+from bazaar_contrib_server_access import ACCESS, Shared
 
 ENTRIES = (
     ("timer-wheel", {}),
@@ -184,6 +186,103 @@ async def _stall(ctx: Context) -> AsyncIterator[None]:
 
 
 @asynccontextmanager
+async def _stand(ctx: Context) -> AsyncIterator[None]:
+    """A module whose stands are owned by whoever puts them up, and shared
+    by them, as computers are."""
+    server = ctx.accept(SERVER)
+    access = ctx.accept(ACCESS)
+    database = ctx.accept(SERVER_DB)
+    names: dict[str, str] = {}
+
+    async def name(stand_id: str) -> str | None:
+        return names.get(stand_id)
+
+    async def stand(request: Request) -> str:
+        found = await server.refs.values([request.path_params["ref"]])
+        assert found is not None
+        return found[0]
+
+    async def put_up(request: Request) -> Response:
+        viewer: Account = request.state.account
+        stand_id = str(uuid7())
+        names[stand_id] = str((await request.form())["name"])
+        await database.transaction(
+            lambda session: access.own(session, viewer.id, "stand", stand_id)
+        )
+        await server.refs.load([stand_id])
+        return JSONResponse({"ref": server.refs.ref(stand_id)})
+
+    async def seen(request: Request) -> Response:
+        visible = await access.targets(request.state.account, "stand", "stands.view")
+        return JSONResponse(
+            sorted(
+                name
+                for stand_id, name in names.items()
+                if visible is None or stand_id in visible
+            )
+        )
+
+    async def may(request: Request) -> Response:
+        viewer: Account = request.state.account
+        stand_id = await stand(request)
+        return JSONResponse(
+            {
+                "delete": await access.can(viewer, "stand", stand_id, "stands.delete"),
+                "share": await access.can_share(viewer, "stand", stand_id),
+            }
+        )
+
+    async def take_down(request: Request) -> Response:
+        stand_id = await stand(request)
+        await database.transaction(
+            lambda session: access.forget(session, "stand", stand_id)
+        )
+        del names[stand_id]
+        return Response(status_code=204)
+
+    async def sharing(request: Request) -> Response:
+        # the share page in a frame, as the stand's own page would hold it
+        return HTMLResponse(
+            f'<iframe id="share" src="/ui/access/shares/stand/{request.path_params["ref"]}"></iframe>'
+            "<script>document.getElementById('share').addEventListener('bazaar:done',"
+            " () => { document.body.dataset.done = 'yes'; });</script>"
+        )
+
+    async with (
+        server.module(
+            "stand",
+            ui=Starlette(
+                routes=[
+                    Route("/", seen),
+                    Route("/", put_up, methods=["POST"]),
+                    Route("/{ref}/may", may),
+                    Route("/{ref}/sharing", sharing),
+                    Route("/{ref}/remove", take_down, methods=["POST"]),
+                ]
+            ),
+        ),
+        server.permission(
+            PermissionItem(point="stands.view", description="stands.view")
+        ),
+        server.permission(
+            PermissionItem(point="stands.delete", description="stands.delete")
+        ),
+        server.permission(
+            PermissionItem(point="stands.share", description="stands.share")
+        ),
+        access.shared(
+            Shared(
+                kind="stand",
+                permission="stands.share",
+                points=("stands.view", "stands.delete"),
+                name=name,
+            )
+        ),
+    ):
+        yield
+
+
+@asynccontextmanager
 async def serving(*, door: bool = False, **access: Any) -> AsyncIterator[Served]:
     """The entries running, with server-access configured as given, and the
     door as a login method when asked for."""
@@ -236,6 +335,12 @@ async def serving(*, door: bool = False, **access: Any) -> AsyncIterator[Served]
                 *composition.entries,
                 ContribEntry(
                     name="stall", definition=Contrib(accepts=[SERVER], lifespan=_stall)
+                ),
+                ContribEntry(
+                    name="stand",
+                    definition=Contrib(
+                        accepts=[SERVER, ACCESS, SERVER_DB], lifespan=_stand
+                    ),
                 ),
                 ContribEntry(
                     name="look", definition=Contrib(accepts=[HTTP], lifespan=look)

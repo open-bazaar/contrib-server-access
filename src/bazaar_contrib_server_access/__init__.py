@@ -1,5 +1,5 @@
 """Sessions, the login page, accounts, roles and the login methods the
-server's pages and APIs are behind."""
+server's pages and APIs are behind, and the shares of other modules' targets."""
 
 from __future__ import annotations
 
@@ -26,14 +26,16 @@ from .contracts import (
     Method,
     Refused,
     Role,
+    Shared,
     Unassigned,
     Unavailable,
 )
 lazy from .accounts import ADMIN, Accounts
 lazy from .login import Login
-lazy from .methods import Methods
 lazy from .roles import Roles
 lazy from .schema import MODULE
+lazy from .secrets import derive, hash_secret, new_secret, verify_secret
+lazy from .service import Service
 lazy from .sessions import Sessions, key
 lazy from .settings import ACCOUNTS, METHODS, ROLES, Settings
 
@@ -47,9 +49,14 @@ __all__ = [
     "Method",
     "Refused",
     "Role",
+    "Shared",
     "Unassigned",
     "Unavailable",
     "access",
+    "derive",
+    "hash_secret",
+    "new_secret",
+    "verify_secret",
 ]
 
 
@@ -91,10 +98,13 @@ async def _access(ctx: Context, config: AccessConfig) -> AsyncIterator[None]:
             pages, sessions, accounts, roles, ctx.accept(TIMER), config.session_minutes
         )
         settings = Settings(server, pages, login, accounts, roles)
+        service = Service(
+            login, accounts, roles, ctx.accept(TIMER), database, server, pages
+        )
         async with (
             server.module(
                 "access",
-                ui=settings.app,
+                ui=pages.application([*settings.routes, *service.routes]),
                 static=resources / "static",
                 locales=resources / "locales",
             ),
@@ -153,7 +163,7 @@ async def _access(ctx: Context, config: AccessConfig) -> AsyncIterator[None]:
                 )
             ),
         ):
-            ctx.offer(ACCESS, Methods(login, accounts, roles, ctx.accept(TIMER)))
+            ctx.offer(ACCESS, service)
             yield
 
 
