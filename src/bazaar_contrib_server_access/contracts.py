@@ -157,6 +157,12 @@ class Access(Protocol):
         """Let owners share the kind's targets while open."""
         ...
 
+    def points(
+        self, kind: str, points: Sequence[str]
+    ) -> AbstractAsyncContextManager[None]:
+        """Let shares of the kind's targets also carry the points while open."""
+        ...
+
     async def own(
         self, session: Session, account_id: str, kind: str, target_id: str
     ) -> None:

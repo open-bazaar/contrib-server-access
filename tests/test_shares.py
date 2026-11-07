@@ -85,6 +85,29 @@ async def test_an_owner_shares_a_stand_with_a_role():
         assert (await boss.get(sharing)).status_code == 200
 
 
+async def test_a_point_another_module_adds_is_shared_like_the_kinds_own():
+    async with (
+        serving(door=True) as served,
+        client() as boss,
+        client() as alice,
+        client() as bob,
+    ):
+        await admin(served, boss)
+        painters = await role(
+            served, boss, "stands.view", "stands.paint", "stands.share"
+        )
+        await boss.post(f"{served.url}{painters}/default")
+        await through(served, alice, "alice")
+        await through(served, bob, "bob")
+        east = await put_up(served, alice, "east")
+        paints = f"{served.url}/ui/stand/{east}/paints"
+        assert not (await bob.get(paints)).json()["paint"]
+        page = await alice.get(f"{served.url}/ui/access/shares/stand/{east}")
+        assert f'value="{painters.rsplit("/", 1)[1]} stands.paint"' in page.text
+        await share(served, alice, east, {painters: ["stands.view", "stands.paint"]})
+        assert (await bob.get(paints)).json()["paint"]
+
+
 async def test_a_share_carries_only_what_its_owner_may_do_and_keeps_the_rest():
     async with (
         serving(door=True) as served,
