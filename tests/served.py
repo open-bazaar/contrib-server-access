@@ -232,6 +232,16 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
             }
         )
 
+    async def paints(request: Request) -> Response:
+        stand_id = await stand(request)
+        return JSONResponse(
+            {
+                "paint": await access.can(
+                    request.state.account, "stand", stand_id, "stands.paint"
+                )
+            }
+        )
+
     async def take_down(request: Request) -> Response:
         stand_id = await stand(request)
         await database.transaction(
@@ -256,6 +266,7 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
                     Route("/", seen),
                     Route("/", put_up, methods=["POST"]),
                     Route("/{ref}/may", may),
+                    Route("/{ref}/paints", paints),
                     Route("/{ref}/sharing", sharing),
                     Route("/{ref}/remove", take_down, methods=["POST"]),
                 ]
@@ -270,6 +281,9 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
         server.permission(
             PermissionItem(point="stands.share", description="stands.share")
         ),
+        server.permission(
+            PermissionItem(point="stands.paint", description="stands.paint")
+        ),
         access.shared(
             Shared(
                 kind="stand",
@@ -278,6 +292,8 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
                 name=name,
             )
         ),
+        # another module's point that shares of stands carry as well
+        access.points("stand", ("stands.paint",)),
     ):
         yield
 

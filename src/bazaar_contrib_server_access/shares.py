@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 lazy import json
-lazy from collections.abc import AsyncIterator
+lazy from collections.abc import AsyncIterator, Sequence
 lazy from time import time_ns
 lazy from typing import Annotated, cast
 
@@ -62,6 +62,7 @@ class Shares:
         self._pages = pages
         self._roles = roles
         self._kinds: dict[str, Shared] = {}
+        self._added: dict[str, list[tuple[str, ...]]] = {}
         self.routes = [
             Route("/shares/{kind}/{ref}", self._page),
             Route("/shares/{kind}/{ref}", self._save, methods=["POST"]),
@@ -76,6 +77,21 @@ class Shares:
             yield
         finally:
             del self._kinds[shared.kind]
+
+    @asynccontextmanager
+    async def points(self, kind: str, points: Sequence[str]) -> AsyncIterator[None]:
+        added = tuple(points)
+        self._added.setdefault(kind, []).append(added)
+        try:
+            yield
+        finally:
+            self._added[kind].remove(added)
+
+    def _points(self, shared: Shared) -> tuple[str, ...]:
+        return (
+            *shared.points,
+            *(point for added in self._added.get(shared.kind, ()) for point in added),
+        )
 
     async def own(
         self, session: Session, account_id: str, kind: str, target_id: str
@@ -185,7 +201,7 @@ class Shares:
         )
         found = frozenset(cast(str, row["target_id"]) for row in owned)
         shared = self._kinds.get(kind)
-        if shared is None or point not in shared.points:
+        if shared is None or point not in self._points(shared):
             return found
         given = await session.select(
             Select(
@@ -274,7 +290,7 @@ class Shares:
             status_code=200 if chosen is None else 422,
             name=name,
             # only what the account itself may do can be shared
-            points=[point for point in shared.points if account.allows(point)],
+            points=[point for point in self._points(shared) if account.allows(point)],
             roles=sorted(roles, key=lambda role: role.name),
             default=await self._roles.default(),
             grants=grants,
@@ -285,7 +301,9 @@ class Shares:
     async def _save(self, request: Request) -> Response:
         shared, target_id, _ = await self._target(request)
         account: Account = request.state.account
-        points = frozenset(point for point in shared.points if account.allows(point))
+        points = frozenset(
+            point for point in self._points(shared) if account.allows(point)
+        )
         form = await request.form()
         try:
             given = _Given.model_validate(
