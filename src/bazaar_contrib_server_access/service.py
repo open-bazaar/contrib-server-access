@@ -1,5 +1,5 @@
-"""ACCESS as one service: what login methods hold server-access to, and the
-shares of the targets other modules own."""
+"""ACCESS as one service: what login methods hold server-access to, the
+shares of the targets other modules own, and the values signed for them."""
 
 from __future__ import annotations
 
@@ -27,3 +27,10 @@ class Service(Methods, Shares):
     ) -> None:
         Methods.__init__(self, login, accounts, roles, timer)
         Shares.__init__(self, database, server, pages, roles)
+        self._sessions = login.sessions
+
+    def sign(self, label: str, value: str) -> str:
+        return self._sessions.sign(label, value)
+
+    def verify(self, label: str, value: str, signature: str) -> bool:
+        return self._sessions.verify(label, value, signature)

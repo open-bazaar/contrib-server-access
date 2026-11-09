@@ -12,6 +12,7 @@ lazy from hashlib import sha256
 lazy from pathlib import Path
 lazy from tempfile import NamedTemporaryFile
 lazy from time import time_ns
+lazy from urllib.parse import quote
 
 COOKIE = "bcs_session"
 RENEWAL = "bcs_reauth"
@@ -38,7 +39,8 @@ class Renewal:
 
 
 class Sessions:
-    """Issues and reads session cookies signed with session.key."""
+    """Issues and reads session cookies signed with session.key, and signs
+    other values with it under their labels."""
 
     def __init__(self, key: bytes) -> None:
         self._key = key
@@ -74,7 +76,7 @@ class Sessions:
     def renewal(self, account_id: str, session_version: int, method: str) -> str:
         ends = time_ns() // 1_000_000 + RENEWAL_DAYS * 86_400_000
         body = f"{account_id}:{session_version}:{method}:{ends}"
-        return f"{body}:{self._sign('renewal:' + body)}"
+        return f"{body}:{self.sign('renewal', body)}"
 
     def renewing(self, cookie: str | None) -> Renewal | None:
         """The renewal a cookie asks for, or nothing when it is forged or
@@ -82,9 +84,7 @@ class Sessions:
         if not cookie:
             return None
         body, _, signature = cookie.rpartition(":")
-        if not body or not hmac.compare_digest(
-            self._sign("renewal:" + body).encode(), signature.encode()
-        ):
+        if not body or not self.verify("renewal", body, signature):
             return None
         parts = body.split(":")
         if len(parts) != 4:
@@ -97,6 +97,16 @@ class Sessions:
         ):
             return None
         return Renewal(account_id, int(mark), method)
+
+    def sign(self, label: str, value: str) -> str:
+        """The value signed with the session key under the label, both
+        percent-encoded before they are joined, so no other label and value
+        give the same signature."""
+        return self._sign(f"{quote(label, safe='')}:{quote(value, safe='')}")
+
+    def verify(self, label: str, value: str, signature: str) -> bool:
+        # as bytes, so a signature with characters a digest never has is just wrong
+        return hmac.compare_digest(self.sign(label, value).encode(), signature.encode())
 
     def _sign(self, body: str) -> str:
         return hmac.new(self._key, body.encode("utf-8"), sha256).hexdigest()

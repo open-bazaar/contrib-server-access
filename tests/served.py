@@ -37,7 +37,7 @@ from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
 
-from bazaar_contrib_server_access import ACCESS, Shared
+from bazaar_contrib_server_access import ACCESS, Access, Shared
 
 ENTRIES = (
     ("timer-wheel", {}),
@@ -56,6 +56,8 @@ class Served:
     url: str
     # what the admin made on this start was given, or nothing
     password: str
+    # what server-access does for the modules
+    access: Access
     # the test login method, when it was asked for
     door: Door | None = None
 
@@ -312,6 +314,7 @@ async def serving(*, door: bool = False, **access: Any) -> AsyncIterator[Served]
     @asynccontextmanager
     async def look(ctx: Context) -> AsyncIterator[None]:
         found["url"] = ctx.accept(HTTP).url
+        found["access"] = ctx.accept(ACCESS)
         yield
 
     @asynccontextmanager
@@ -359,7 +362,8 @@ async def serving(*, door: bool = False, **access: Any) -> AsyncIterator[Served]
                     ),
                 ),
                 ContribEntry(
-                    name="look", definition=Contrib(accepts=[HTTP], lifespan=look)
+                    name="look",
+                    definition=Contrib(accepts=[HTTP, ACCESS], lifespan=look),
                 ),
                 *(
                     (
@@ -389,7 +393,9 @@ async def serving(*, door: bool = False, **access: Any) -> AsyncIterator[Served]
                 ),
                 "",
             )
-            yield Served(hub, found["url"], password, found.get("door"))
+            yield Served(
+                hub, found["url"], password, found["access"], found.get("door")
+            )
     finally:
         logger.removeHandler(handler)
 
