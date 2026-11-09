@@ -111,8 +111,9 @@ class Method(Protocol):
 
 
 class Access(Protocol):
-    """What server-access does for login methods, and for the modules whose
-    targets are owned and shared."""
+    """What server-access does for login methods, for the modules whose
+    targets are owned and shared, and for those signing what their pages
+    hand out."""
 
     @property
     def minutes(self) -> int:
@@ -190,6 +191,17 @@ class Access(Protocol):
     async def can_share(self, account: Account, kind: str, target_id: str) -> bool:
         """Whether the account may share the target: admin, or the owner
         holding the kind's permission point for sharing."""
+        ...
+
+    def sign(self, label: str, value: str) -> str:
+        """An HMAC-SHA256 with session.key of the label and the value, each
+        percent-encoded and joined by a colon, such as an address a page
+        hands out under the label image."""
+        ...
+
+    def verify(self, label: str, value: str, signature: str) -> bool:
+        """Whether the signature is the value's under the label, compared in
+        constant time."""
         ...
 
 
