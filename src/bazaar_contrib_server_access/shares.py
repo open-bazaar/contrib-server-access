@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 lazy import json
-lazy from collections.abc import AsyncIterator, Sequence
+lazy from collections.abc import AsyncIterator, Mapping, Sequence
 lazy from time import time_ns
 lazy from typing import Annotated, cast
 
@@ -96,6 +96,17 @@ class Shares:
     async def own(
         self, session: Session, account_id: str, kind: str, target_id: str
     ) -> None:
+        await session.delete(
+            Delete(
+                table="relations",
+                where=All(
+                    conditions=(
+                        equals("kind", f"{kind}_owner"),
+                        equals("target_id", target_id),
+                    )
+                ),
+            )
+        )
         await session.insert(
             Insert(
                 table="relations",
@@ -110,6 +121,31 @@ class Shares:
                 ),
             )
         )
+
+    async def owners(
+        self, session: Session, kind: str, target_ids: Sequence[str]
+    ) -> Mapping[str, str]:
+        rows = await session.select(
+            Select(
+                table="relations",
+                columns={
+                    "subject_id": Column(name="subject_id"),
+                    "target_id": Column(name="target_id"),
+                },
+                where=All(
+                    conditions=(
+                        equals("kind", f"{kind}_owner"),
+                        In(
+                            expression=Column(name="target_id"),
+                            values=tuple(target_ids),
+                        ),
+                    )
+                ),
+            )
+        )
+        return {
+            cast(str, row["target_id"]): cast(str, row["subject_id"]) for row in rows
+        }
 
     async def forget(self, session: Session, kind: str, target_id: str) -> None:
         await session.delete(
