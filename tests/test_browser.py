@@ -62,6 +62,41 @@ async def test_a_module_page_wears_the_shell_theme_and_language_and_moves_its_ad
             await browser.close()
 
 
+async def test_the_shell_stays_as_its_places_open_and_its_pages_change_in_place():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(locale="zh-CN")
+            page = await signed_in(await context.new_page(), served)
+            await page.evaluate("window.kept = true")
+            lit = page.locator('.side a.nav[aria-current="page"]')
+            # a place in the sidebar opens in the frame, lit, the shell kept
+            await page.locator('.side a.nav[href="/stall/aisle/1"]').click()
+            await page.wait_for_url(re.compile(r"/stall/aisle/1$"))
+            await expect(lit).to_have_attribute("href", "/stall/aisle/1")
+            await page.locator('.side a.nav[href="/stall"]').click()
+            await page.wait_for_url(re.compile(r"/stall$"))
+            await expect(lit).to_have_attribute("href", "/stall")
+            # a page's own link changes it in place, its address following
+            module = page.frame(url=re.compile(r"/ui/stall/$"))
+            assert module
+            await module.evaluate("window.kept = true")
+            await module.click("#next")
+            await page.wait_for_url(re.compile(r"/stall/second$"))
+            await expect(page).to_have_title("Second stall")
+            assert await module.evaluate("window.kept === true")
+            # back to where it was, the place lit as the frame goes
+            await page.go_back()
+            await page.wait_for_url(re.compile(r"/stall$"))
+            await expect(page).to_have_title("First stall")
+            await page.go_back()
+            await page.wait_for_url(re.compile(r"/stall/aisle/1$"))
+            await expect(lit).to_have_attribute("href", "/stall/aisle/1")
+            assert await page.evaluate("window.kept === true")
+        finally:
+            await browser.close()
+
+
 async def test_a_framed_part_is_as_tall_as_its_page():
     async with serving() as served, async_playwright() as driver:
         browser = await driver.chromium.launch()
