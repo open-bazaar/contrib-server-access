@@ -224,6 +224,19 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
             )
         )
 
+    async def mine(request: Request) -> Response:
+        viewer: Account = request.state.account
+        owners = await database.read(
+            lambda session: access.owners(session, "stand", list(names))
+        )
+        return JSONResponse(
+            sorted(
+                names[stand_id]
+                for stand_id, owner_id in owners.items()
+                if owner_id == viewer.id
+            )
+        )
+
     async def may(request: Request) -> Response:
         viewer: Account = request.state.account
         stand_id = await stand(request)
@@ -267,6 +280,7 @@ async def _stand(ctx: Context) -> AsyncIterator[None]:
                 routes=[
                     Route("/", seen),
                     Route("/", put_up, methods=["POST"]),
+                    Route("/mine", mine),
                     Route("/{ref}/may", may),
                     Route("/{ref}/paints", paints),
                     Route("/{ref}/sharing", sharing),

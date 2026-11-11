@@ -167,7 +167,15 @@ class Access(Protocol):
     async def own(
         self, session: Session, account_id: str, kind: str, target_id: str
     ) -> None:
-        """Make the account the target's owner, in the caller's transaction."""
+        """Make the account the target's owner in place of any before it, in
+        the caller's transaction."""
+        ...
+
+    async def owners(
+        self, session: Session, kind: str, target_ids: Sequence[str]
+    ) -> Mapping[str, str]:
+        """Who owns each of the targets that has an owner, in the caller's
+        transaction."""
         ...
 
     async def forget(self, session: Session, kind: str, target_id: str) -> None:

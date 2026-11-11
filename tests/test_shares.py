@@ -21,6 +21,10 @@ async def seen(served: Served, session: httpx.AsyncClient) -> list[str]:
     return (await session.get(f"{served.url}/ui/stand/")).json()
 
 
+async def mine(served: Served, session: httpx.AsyncClient) -> list[str]:
+    return (await session.get(f"{served.url}/ui/stand/mine")).json()
+
+
 async def may(
     served: Served, session: httpx.AsyncClient, stand: str
 ) -> dict[str, bool]:
@@ -83,6 +87,28 @@ async def test_an_owner_shares_a_stand_with_a_role():
         # the admin sees and may share every stand
         assert await seen(served, boss) == ["north"]
         assert (await boss.get(sharing)).status_code == 200
+
+
+async def test_each_stand_is_owned_by_whoever_put_it_up():
+    async with (
+        serving(door=True) as served,
+        client() as boss,
+        client() as alice,
+        client() as bob,
+    ):
+        await admin(served, boss)
+        makers = await role(served, boss, "stands.view", "stands.share")
+        await boss.post(f"{served.url}{makers}/default")
+        await through(served, alice, "alice")
+        await through(served, bob, "bob")
+        north = await put_up(served, alice, "north")
+        await put_up(served, alice, "east")
+        await put_up(served, boss, "south")
+        await share(served, alice, north, {makers: ["stands.view"]})
+        assert await mine(served, alice) == ["east", "north"]
+        assert await mine(served, boss) == ["south"]
+        # a stand shared with someone is still its owner's alone
+        assert await mine(served, bob) == []
 
 
 async def test_a_point_another_module_adds_is_shared_like_the_kinds_own():
