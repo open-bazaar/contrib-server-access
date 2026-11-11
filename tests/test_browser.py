@@ -270,13 +270,18 @@ async def test_the_appearance_part_dresses_the_whole_window():
             part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
             await part.locator("label:has(input[name=day_theme][value=night])").click()
             await expect(page.locator("html")).to_have_attribute("data-theme", "night")
+            # the language list opens over the frames, drawn by the page
             part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
-            await part.locator("#language").select_option("en")
+            await part.locator(".input.select").click()
+            await page.locator(".choosing .choice", has_text="English").click()
             await expect(page.locator("html")).to_have_attribute("lang", "en")
             await expect(page.locator(".side .nav-group").first).to_have_text(
                 "Workbench"
             )
-            # the card beside the account turns to the night at a click
+            # the card beside the account turns to the night at a click, its
+            # buttons hinting what they do
+            await page.locator(".me .theme button[value=dark]").hover()
+            await expect(page.locator(".tooltip")).to_have_text("Always night")
             await page.locator(".me .theme button[value=dark]").click()
             await expect(page.locator("html")).to_have_attribute("data-theme", "night")
             # kept for the account, not the window
@@ -288,6 +293,25 @@ async def test_the_appearance_part_dresses_the_whole_window():
             await other.goto(f"{served.url}/stall")
             await expect(other.locator("html")).to_have_attribute("lang", "en")
             await expect(other.locator("html")).to_have_attribute("data-theme", "night")
+        finally:
+            await browser.close()
+
+
+async def test_a_field_left_empty_says_so_under_itself():
+    async with serving() as served, async_playwright() as driver:
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(locale="zh-CN", color_scheme="dark")
+            page = await signed_in(await context.new_page(), served)
+            await page.goto(f"{served.url}/settings/roles")
+            part = page.frame_locator("iframe.frame").frame_locator("iframe.pane")
+            await part.locator("a[href='/ui/access/roles/new']").click()
+            await part.locator("button[type=submit]").click()
+            name = part.locator("#name")
+            await expect(name).to_have_attribute("aria-invalid", "true")
+            await expect(part.locator(".problem")).to_have_text("请填写这一项")
+            await name.fill("运营")
+            await expect(part.locator(".problem")).to_have_count(0)
         finally:
             await browser.close()
 
