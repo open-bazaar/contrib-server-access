@@ -31,7 +31,7 @@
         <div class="or">{{ t.text("access.login.others") }}</div>
         <div class="logos">
           {% for method in methods %}
-          <button class="logo" type="button" x-show="chosen !== '{{ method.key }}'"{% if loop.first %} x-cloak{% endif %} @click="chosen = '{{ method.key }}'" title="{{ t.text(method.name) }}" aria-label="{{ t.text(method.name) }}"><span class="tile sm">{{ method.icon | safe }}</span></button>
+          <button class="logo" type="button" x-show="chosen !== '{{ method.key }}'"{% if loop.first %} x-cloak{% endif %} @click="chosen = '{{ method.key }}'" data-tip="{{ t.text(method.name) }}" aria-label="{{ t.text(method.name) }}"><span class="tile sm">{{ method.icon | safe }}</span></button>
           {% endfor %}
         </div>
         {% if failure %}<p class="err" role="alert"><span class="i">{% include "access/triangle-alert.svg" %}</span>{{ t.text(failure) }}</p>{% endif %}

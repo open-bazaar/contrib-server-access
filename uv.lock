@@ -77,7 +77,7 @@ wheels = [
 
 [[package]]
 name = "bazaar-contrib-server"
-version = "0.3.0rc10"
+version = "0.3.0rc13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bazaar-contrib-http" },
@@ -95,9 +95,9 @@ dependencies = [
     { name = "starlette" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/86/e1cd33539602ce4c143af85032c8f3bc00149052c1b13aa26487c886fcd0/bazaar_contrib_server-0.3.0rc10.tar.gz", hash = "sha256:154b5c15740ad41611b5a3e8643182243302a421e735b4c7baf361adbb650fcb", size = 483462, upload-time = "2026-11-11T02:10:58.343Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/fa/ee6ce533edd6dadb44fc9101499fbbcb10a24b6cd97536af4dde0b6dfd63/bazaar_contrib_server-0.3.0rc13.tar.gz", hash = "sha256:b3e3697d956d6a9697fa96a0dd3c7c730ad5d7cd1c473881c0ae65a5f8b44afd", size = 489985, upload-time = "2026-11-11T09:20:14.498Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/e0/b9c7b545a0c5fe8651c6795c0a4f9eae0f51866c32cf9dbf8e8e7bfc489a/bazaar_contrib_server-0.3.0rc10-py3-none-any.whl", hash = "sha256:00875c31ec99d591b8b1b532b1c5f7b18ccb80fed4af698fa53e8ceeb40456a2", size = 495821, upload-time = "2026-11-11T02:10:57.032Z" },
+    { url = "https://files.pythonhosted.org/packages/49/1f/01639a7a5c0c641fa38e2e79e5f74812814e7bd7a41ecf43ec0090df8c61/bazaar_contrib_server-0.3.0rc13-py3-none-any.whl", hash = "sha256:581cdc89e51e56e100b8fe7a74dfb43b93be0d6b02539258d5dee0305ccbd9d2", size = 503417, upload-time = "2026-11-11T09:20:12.853Z" },
 ]
 
 [[package]]
@@ -137,7 +137,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bazaar-contrib-schema", specifier = "~=0.3.0rc1" },
-    { name = "bazaar-contrib-server", specifier = "~=0.3.0rc10" },
+    { name = "bazaar-contrib-server", specifier = "~=0.3.0rc13" },
     { name = "bazaar-contrib-server-database", specifier = "~=0.3.0rc1" },
     { name = "bazaar-contrib-server-migrations", specifier = "~=0.3.0rc2" },
     { name = "bazaar-contrib-storage", specifier = "~=0.3.0rc1" },
