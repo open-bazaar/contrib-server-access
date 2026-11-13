@@ -19,6 +19,8 @@
 "access.shares.title" = "Share {{ name }}"
 "access.shares.hint" = "Choose the roles to share with and what they may do. Members also need the matching permissions in their roles; you can only share what you can do yourself."
 "access.shares.search" = "Search roles"
+"access.shares.all" = "All granted"
+"access.shares.count" = "Permissions granted"
 "access.shares.role" = "Role"
 "access.shares.default" = "Global default role"
 "access.shares.none" = "There are no roles yet. Create one in the settings first."

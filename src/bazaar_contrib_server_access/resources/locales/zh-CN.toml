@@ -19,6 +19,8 @@
 "access.shares.title" = "分享 {{ name }}"
 "access.shares.hint" = "选择分享给哪些角色、可以做什么。角色里的成员还要有对应的功能权限才用得上；你只能分享自己能做的操作。"
 "access.shares.search" = "搜索角色"
+"access.shares.all" = "已全部授权"
+"access.shares.count" = "已授权权限数"
 "access.shares.role" = "角色"
 "access.shares.default" = "全局默认角色"
 "access.shares.none" = "还没有角色，先在设置里新建一个。"
