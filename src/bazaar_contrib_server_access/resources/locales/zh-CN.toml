@@ -55,7 +55,7 @@
 "access.roles.remove" = "删除角色"
 "access.methods" = "登录方式"
 "access.methods.description" = "账号密码与第三方登录"
-"access.methods.hint" = "第三方登录由插件提供，启用插件后出现在这里。"
+"access.methods.hint" = "第三方登录由 Contrib 提供，启用 Contrib 后出现在这里。"
 "access.methods.password" = "账号密码"
 "access.methods.builtin" = "内置"
 "access.methods.password_hint" = "本地账户始终可以登录"

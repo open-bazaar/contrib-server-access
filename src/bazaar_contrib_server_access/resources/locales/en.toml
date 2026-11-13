@@ -55,7 +55,7 @@
 "access.roles.remove" = "Remove the role"
 "access.methods" = "Login methods"
 "access.methods.description" = "Password and other sites"
-"access.methods.hint" = "Logins through other sites come from plugins; enabled ones show here."
+"access.methods.hint" = "Logins through other sites come from Contribs; enabled ones show here."
 "access.methods.password" = "Account and password"
 "access.methods.builtin" = "Built in"
 "access.methods.password_hint" = "Local accounts can always log in"
