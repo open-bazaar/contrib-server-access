@@ -10,16 +10,23 @@
   <p class="hint">{{ t.text("access.shares.hint") }}</p>
   {% if roles %}
   <label class="input search">{% include "access/icons/search.svg" %}<input type="search" x-model="query" placeholder="{{ t.text('access.shares.search') }}" aria-label="{{ t.text('access.shares.search') }}"></label>
-  <div class="grants" style="--points: {{ points | length }}">
-    <div class="gr h"><span>{{ t.text("access.shares.role") }}</span>{% for point in points %}<span>{{ t.text(point) }}</span>{% endfor %}</div>
+  <div class="grants">
     {% for role in roles %}
-    <div class="gr" data-name="{{ role.name | lower }}" x-data="{ changed: false }" @change="changed = true" :class="{ changed }" x-show="!query || $el.dataset.name.includes(query.toLowerCase())">
+    {% set granted = points | select("in", grants.get(role.id, ())) | list %}
+    <details class="gr"{% if loop.first %} open{% endif %} data-name="{{ role.name | lower }}" x-data="{ changed: false, count: {{ granted | length }} }" @change="changed = true; count = $el.querySelectorAll('input[name=grant]:checked').length" :class="{ changed }" x-show="!query || $el.dataset.name.includes(query.toLowerCase())">
       <input type="hidden" name="roles" value="{{ ref(role.id) }}">
-      <div class="rn"><b>{{ role.name }}</b>{% if default and default.id == role.id %}<small>{{ t.text("access.shares.default") }}</small>{% endif %}</div>
-      {% for point in points %}
-      <label class="ck"><input type="checkbox" name="grant" value="{{ ref(role.id) }} {{ point }}"{% if point in grants.get(role.id, ()) %} checked{% endif %}><span>{{ t.text(point) }}</span></label>
-      {% endfor %}
-    </div>
+      <summary>
+        <span class="rn"><b>{{ role.name }}</b>{% if default and default.id == role.id %}<small>{{ t.text("access.shares.default") }}</small>{% endif %}</span>
+        <span class="all" x-show="count === {{ points | length }}"{% if granted | length != points | length %} x-cloak{% endif %}>{{ t.text("access.shares.all") }}</span>
+        <span class="count" aria-label="{{ t.text('access.shares.count') }}"><span x-text="count">{{ granted | length }}</span> / {{ points | length }}</span>
+        <span class="chevron">{% include "server/icons/chevron-down.svg" %}</span>
+      </summary>
+      <div class="permissions">
+        {% for point in points %}
+        <label class="ck"><span>{{ t.text(point) }}</span><input type="checkbox" name="grant" value="{{ ref(role.id) }} {{ point }}"{% if point in grants.get(role.id, ()) %} checked{% endif %}></label>
+        {% endfor %}
+      </div>
+    </details>
     {% endfor %}
   </div>
   {% else %}

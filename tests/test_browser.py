@@ -454,3 +454,57 @@ async def test_a_share_page_in_a_frame_says_when_it_is_done():
             await expect(share.locator(".ck span").first).to_be_visible()
         finally:
             await browser.close()
+
+
+async def test_sharing_many_permissions_fits_a_drawer_and_keeps_its_grants():
+    async with (
+        serving() as served,
+        async_playwright() as driver,
+        served.access.points(
+            "stand", ("stands.rename", "stands.inspect", "stands.manage")
+        ),
+    ):
+        browser = await driver.chromium.launch()
+        try:
+            context = await browser.new_context(
+                viewport={"width": 1280, "height": 800}, locale="en-US"
+            )
+            page = await signed_in(await context.new_page(), served)
+            for name in ("Team members", "Administrators"):
+                await page.request.post(
+                    f"{served.url}/ui/access/roles/", form={"name": name}
+                )
+            made = await page.request.post(
+                f"{served.url}/ui/stand/", form={"name": "Build computer"}
+            )
+            await page.goto(
+                f"{served.url}/ui/stand/{(await made.json())['ref']}/sharing"
+            )
+            await page.locator("#share").evaluate(
+                "frame => { frame.style.width = '360px'; frame.style.height = '600px'; }"
+            )
+            share = page.frame_locator("#share")
+            await expect(share.locator(".gr")).to_have_count(2)
+            team = share.locator('.gr[data-name="team members"]')
+            await team.locator("summary").click()
+            await expect(team.locator(".ck")).to_have_count(6)
+            await team.locator("input[name=grant]").first.check()
+            await expect(team.locator(".count")).to_have_text("1 / 6")
+            assert await share.locator("html").evaluate(
+                "el => el.scrollWidth <= el.clientWidth"
+            )
+            await share.locator("footer button[type=submit]").click()
+            await expect(page.locator("body")).to_have_attribute("data-done", "yes")
+            await page.reload()
+            share = page.frame_locator("#share")
+            team = share.locator('.gr[data-name="team members"]')
+            await team.locator("summary").click()
+            await expect(team.locator("input[name=grant]").first).to_be_checked()
+            await share.locator("input[type=search]").fill("Team")
+            await expect(share.locator(".gr:visible")).to_have_count(1)
+            await page.set_viewport_size({"width": 390, "height": 844})
+            assert await share.locator("html").evaluate(
+                "el => el.scrollWidth <= el.clientWidth"
+            )
+        finally:
+            await browser.close()
